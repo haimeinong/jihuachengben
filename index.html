@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>计划成本计算</title>
+<style>
+/* SECTION: base */
+:root{
+  --bg:#f4f6fa; --card:#fff; --line:#e3e8f0; --ink:#1e2532; --ink2:#5b6576; --ink3:#8a94a6;
+  --pri:#2f54c9; --pri-d:#2540a0; --pri-l:#eef2fd; --ok:#0f9d78; --warn:#d98324; --bad:#d94a4a;
+  --radius:12px; --shadow:0 1px 2px rgba(20,30,55,.05),0 6px 18px rgba(20,30,55,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:14px/1.6 "Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4{margin:0;font-weight:700}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--pri)}
+/* SECTION: layout */
+.wrap{display:flex;min-height:100vh}
+.side{width:210px;flex:0 0 210px;background:#141d33;color:#cdd6ea;padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{font-size:16px;font-weight:700;color:#fff;letter-spacing:.5px;padding:4px 10px 14px}
+.brand small{display:block;font-size:11px;font-weight:400;color:#8795b3;margin-top:4px;letter-spacing:0}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{background:none;border:0;text-align:left;color:#cdd6ea;padding:10px 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.nav button:hover{background:#1d2846;color:#fff}
+.nav button.on{background:var(--pri);color:#fff;font-weight:700}
+.nav .ic{width:18px;text-align:center;opacity:.9}
+.side footer{margin-top:18px;padding:10px;font-size:11px;color:#7f8caa;border-top:1px solid #222d49}
+.main{flex:1;min-width:0;padding:20px 24px 60px}
+.topbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.topbar h2{font-size:19px}
+.topbar p{margin:2px 0 0;color:var(--ink2);font-size:12.5px}
+.tabs-mobile{display:none}
+/* SECTION: components */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+.card>h3{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card>h3 .tag{font-size:11px;font-weight:400;color:var(--ink3)}
+.btn{background:var(--pri);border:1px solid var(--pri);color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{background:var(--pri-d)}
+.btn.gh{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.gh:hover{border-color:var(--pri);color:var(--pri)}
+.btn.sm{padding:4px 10px;font-size:12.5px;border-radius:7px;font-weight:500}
+.btn.danger{background:#fff;color:var(--bad);border-color:#f0c9c9}
+.btn.danger:hover{background:#fdf2f2}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1;min-width:0}
+.input,select,textarea{background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;min-width:0}
+.input:focus,select:focus,textarea:focus{outline:2px solid var(--pri-l);border-color:var(--pri)}
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:none;padding:7px 16px;cursor:pointer;color:var(--ink2);font-weight:600}
+.seg button.on{background:var(--pri);color:#fff}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;padding:2px 8px;border-radius:20px;background:#eef1f6;color:var(--ink2);white-space:nowrap}
+.badge.ok{background:#e7f6f1;color:var(--ok)}
+.badge.warn{background:#fdf1e2;color:var(--warn)}
+.badge.bad{background:#fdeeee;color:var(--bad)}
+.badge.pri{background:var(--pri-l);color:var(--pri-d)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f7f9fc;color:var(--ink2);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;z-index:1}
+td{padding:9px 10px;border-bottom:1px solid #edf1f6;vertical-align:middle}
+tbody tr:hover{background:#fafbfe}
+.tblwrap{overflow:auto;max-height:60vh;border:1px solid var(--line);border-radius:10px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+th.num{text-align:right}
+.mono{font-family:Consolas,"Courier New",monospace;font-size:12.5px;color:var(--ink2)}
+.redc{color:var(--bad);font-weight:700}
+select[multiple]{padding:6px;min-height:132px}
+select[multiple] option{padding:3px 6px}
+.tagx{display:inline-flex;align-items:center;gap:4px;background:var(--pri-l);color:var(--pri-d);border-radius:6px;padding:2px 8px;font-size:12.5px;font-weight:600}
+.tagx b{cursor:pointer;font-weight:700}
+.audiotbl td{font-size:12.5px}
+.mut{color:var(--ink3)}
+.empty{padding:34px 16px;text-align:center;color:var(--ink3)}
+.empty b{display:block;color:var(--ink2);margin-bottom:6px;font-size:14px}
+.total-row td{background:#f6f8fd;font-weight:700;border-top:2px solid var(--pri)}
+/* SECTION: group rows */
+tr.grp{cursor:pointer}
+tr.grp td{background:#f0e9fb;color:#6b3fd4;font-weight:700;padding:11px 10px;border-top:2px solid #d9c9f2;border-bottom:1px solid #e6dbf7;font-size:13.5px}
+tr.grp:hover td{background:#e9dff8}
+tr.grp .arw{display:inline-block;width:16px;font-size:11px}
+tr.grp .cnt{color:#8a63d2;font-weight:600;margin-left:6px}
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .lb{font-size:12px;color:var(--ink2)}
+.kpi .v{font-size:23px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11.5px;color:var(--ink3);margin-top:3px}
+/* cost bar */
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#eef1f6;min-width:130px}
+.bar i{display:block;height:100%}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--ink2);margin-top:10px}
+.lg span{display:inline-flex;align-items:center;gap:5px}
+.lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+/* flow steps */
+.steps{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.step{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fbfcff}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;margin-bottom:8px}
+.step h4{font-size:13.5px;margin-bottom:5px}
+.step p{margin:0 0 10px;font-size:12.5px;color:var(--ink2)}
+.note{background:#fbf7ec;border:1px solid #eddcb6;border-radius:10px;padding:11px 13px;font-size:12.5px;color:#7a5c15}
+.note.blue{background:var(--pri-l);border-color:#ccd8f7;color:var(--pri-d)}
+/* modal */
+.mask{position:fixed;inset:0;background:rgba(18,26,45,.45);display:none;align-items:flex-start;justify-content:center;padding:5vh 16px;z-index:50;overflow:auto}
+.mask.on{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 50px rgba(15,25,45,.3)}
+.modal.wide{max-width:760px}
+.modal header{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.modal .body{padding:16px 18px}
+.modal footer{padding:13px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.field label{display:block;font-size:12px;color:var(--ink2);margin-bottom:4px}
+.field .hint{font-size:11px;color:var(--ink3);margin-top:3px}
+.field.err .hint{color:var(--bad)}
+/* toast */
+.toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:80;max-width:min(380px,90vw)}
+.toast{background:#1d2843;color:#fff;padding:10px 14px;border-radius:9px;font-size:12.8px;box-shadow:0 8px 24px rgba(15,25,45,.28);animation:tin .2s ease}
+.toast.ok{background:#0f7a5f}.toast.bad{background:#b83b3b}.toast.warn{background:#a86814}
+@keyframes tin{from{transform:translateY(8px);opacity:0}}
+/* responsive */
+@media (max-width:860px){
+  .wrap{display:block}
+  .side{width:auto;flex:none;height:auto;position:static;padding:14px 14px 10px}
+  .nav{flex-direction:row;overflow:auto;gap:6px;padding-bottom:6px}
+  .nav button{white-space:nowrap;padding:8px 12px}
+  .side footer{display:none}
+  .main{padding:14px 14px 50px}
+  .tblwrap{max-height:none}
+  th{position:static}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- SECTION: sidebar -->
+  <aside class="side">
+    <div class="brand">计划成本计算<small>产品成本 · 价格 · BOM · 导入导出</small></div>
+    <nav class="nav" id="nav"></nav>
+    <footer>数据保存在当前浏览器本地<br>导出模板后可离线批量维护</footer>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="pgTitle">成本总览</h2>
+        <p id="pgSub">按 1 箱口径展示计划成本构成</p>
+      </div>
+      <div class="row" id="pgActions"></div>
+    </div>
+    <div id="view"></div>
+  </main>
+</div>
+
+<!-- SECTION: modal -->
+<div class="mask" id="mask">
+  <div class="modal" id="modal">
+    <header><h3 id="mTitle">编辑</h3><button class="btn gh sm" data-m-close>关闭</button></header>
+    <div class="body" id="mBody"></div>
+    <footer id="mFoot"></footer>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<input type="file" id="filePick" accept=".xlsx" style="display:none">
+<input type="file" id="jsonPick" accept=".json,application/json" style="display:none">
+<script src="assets/xlsx.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/ui.js"></script>
+</body>
+</html>
